@@ -87,14 +87,16 @@ const handleTouchEnd = (event: TouchEvent) => {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	background: #f0f0f0;
+	background: rgba(229, 230, 235);
+		border: 1px solid rgb(201, 205, 212);
 	border-radius: 6px;
 	cursor: pointer;
 	user-select: none;
 	font-weight: bold;
 	font-size: 18px;
 	transition: all 0.2s ease;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	/* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
+		box-sizing: border-box;
 }
 
 .mine-cell:hover {

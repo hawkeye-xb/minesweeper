@@ -91,6 +91,7 @@ defineExpose({
 	width: 100%;
 	background: #f5f5f5;
 	overflow: auto;
+	border-radius: 8px;
 }
 
 .game-board {

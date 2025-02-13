@@ -1,7 +1,9 @@
 <template>
 	<div class="game-status">
 		<div class="mines-counter">💣 {{ minesLeft }}</div>
-		<button class="restart-btn" @click="$emit('restart')">重新开始</button>
+		<button class="restart-btn" @click="$emit('restart')">
+			{{ isLost ? '😢重新开始' : '😊新游戏' }}
+		</button>
 		<div class="timer">⏱️ {{ formatTime(time) }}</div>
 	</div>
 </template>
@@ -10,7 +12,8 @@
 import { ref, onUnmounted } from 'vue'
 
 const props = defineProps<{
-	minesLeft: number
+	minesLeft: number,
+	isLost?: boolean
 }>()
 
 const time = ref(0)

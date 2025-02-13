@@ -1,7 +1,8 @@
 <template>
   <div class="minesweeper">
     <DifficultySelector v-model:currentLevel="gameConfig.level" @level-select="handleLevelSelect" />
-    <GameStatus ref="gameStatusRef" @restart="handleRestart" :mines-left="minesLeft" />
+    <GameStatus ref="gameStatusRef" @restart="handleRestart" :mines-left="minesLeft"
+      :is-lost="gameState === GameStateEnum.Lost" />
     <GameBoard ref="gameBoardRef" :rows="gameConfig.rows" :cols="gameConfig.cols" :mine-field="mineField"
       :cell-states="cellStates" @cell-reveal="handleCellReveal" @cell-flag="handleCellFlag"
       @cell-unflag="handleCellUnflag" />
@@ -97,8 +98,14 @@ const throttle = <T extends (...args: any[]) => any>(fn: T, delay: number) => {
   }
 }
 
+// 所有格子都翻开
+const handleAllReveal = () => {
+  cellStates.value.forEach((row, rowIndex) => {
+    row.forEach((cellState, colIndex) => cellStates.value[rowIndex][colIndex] = CellStateEnum.Revealed)
+  })
+}
+
 const handleCellRevealImpl = async (row: number, col: number) => {
-  console.log('handleCellReveal', row, col)
   if (gameState.value === GameStateEnum.Lost || gameState.value === GameStateEnum.Won) return
 
   if (cellStates.value[row][col] !== CellStateEnum.Hidden) return // 已翻开或已标记的格子不处理
@@ -140,6 +147,7 @@ const handleCellRevealImpl = async (row: number, col: number) => {
 
   if (mineField.value[row][col] === -1) { // 点到地雷，游戏结束
     gameStatusRef.value?.stopTimer()
+    handleAllReveal()
 
     gameState.value = GameStateEnum.Lost
     const gameTime = gameStatusRef.value?.getTime() || 0
@@ -149,7 +157,7 @@ const handleCellRevealImpl = async (row: number, col: number) => {
 
     nextTick(async () => {
       await new Promise(resolve => setTimeout(resolve, 100)) // 翻牌子有动画
-      if (confirm(`很遗憾，你被炸死了！\n游戏时长：${timeStr}\n\n要再来一局吗？`)) {
+      if (confirm(`很遗憾，游戏结束！\n游戏时长：${timeStr}\n\n要再来一局吗？`)) {
         handleRestart()
       }
     })
@@ -163,6 +171,7 @@ const handleCellRevealImpl = async (row: number, col: number) => {
   )
   if (isAllRevealed) {
     gameStatusRef.value?.stopTimer()
+    handleAllReveal()
 
     gameState.value = GameStateEnum.Won
     const gameTime = gameStatusRef.value?.getTime() || 0
