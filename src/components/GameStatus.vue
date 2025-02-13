@@ -49,12 +49,15 @@ const formatTime = (seconds: number): string => {
 	return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
+// 获取当前时间
+const getTime = () => time.value
+
 // 暴露方法给父组件
 defineExpose({
 	startTimer,
-	stopTimer,
 	resetTimer,
-	time
+	stopTimer,
+	getTime
 })
 </script>
 

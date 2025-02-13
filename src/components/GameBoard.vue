@@ -80,6 +80,10 @@ const handleUnflag = (row: number, col: number) => {
 const boardStyle = computed(() => ({
 	gridTemplateColumns: `repeat(${props.cols}, 1fr)`,
 }))
+
+defineExpose({
+	handleReveal
+})
 </script>
 
 <style scoped>

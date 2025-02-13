@@ -49,6 +49,8 @@ const LONG_PRESS_DURATION = 500 // 长按判定时间（毫秒）
 const handleClick = () => {
 	if (props.state === CellStateEnum.Hidden) { // 未翻开状态
 		emit('reveal', props.row, props.col)
+	} else if (props.state === CellStateEnum.Flagged) { // 已标记状态
+		emit('unflag', props.row, props.col)
 	}
 }
 

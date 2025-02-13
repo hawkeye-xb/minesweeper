@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import DifficultySelector from './components/DifficultySelector.vue'
 import GameStatus from './components/GameStatus.vue'
 import GameBoard from './components/GameBoard.vue'
@@ -85,7 +85,7 @@ const gameBoardRef = ref<InstanceType<typeof GameBoard> | null>(null)
 
 const handleRestart = initGame
 
-// 添加节流函数工具
+// 添加节流函数工具. 可以用聚合更新
 const throttle = <T extends (...args: any[]) => any>(fn: T, delay: number) => {
   let lastTime = 0
   return (...args: Parameters<T>): ReturnType<T> | undefined => {
@@ -102,8 +102,6 @@ const handleCellRevealImpl = async (row: number, col: number) => {
   if (gameState.value === GameStateEnum.Lost || gameState.value === GameStateEnum.Won) return
 
   if (cellStates.value[row][col] !== CellStateEnum.Hidden) return // 已翻开或已标记的格子不处理
-
-  cellStates.value[row][col] = CellStateEnum.Revealed
 
   if (gameState.value === GameStateEnum.Ready) { // 第一次点击
     gameState.value = GameStateEnum.Playing
@@ -130,15 +128,31 @@ const handleCellRevealImpl = async (row: number, col: number) => {
       })
       mineField.value = field
       console.log('重新生成雷区，状态不变', mineField.value)
+      nextTick(() => {
+        gameBoardRef.value?.handleReveal(row, col)
+      })
+
       return
     }
   }
 
+  cellStates.value[row][col] = CellStateEnum.Revealed
+
   if (mineField.value[row][col] === -1) { // 点到地雷，游戏结束
+    gameStatusRef.value?.stopTimer()
+
     gameState.value = GameStateEnum.Lost
-    setTimeout(() => {
-      alert('游戏结束！你踩到地雷了！')
-    }, 0);
+    const gameTime = gameStatusRef.value?.getTime() || 0
+    const minutes = Math.floor(gameTime / 60)
+    const seconds = gameTime % 60
+    const timeStr = `${minutes}分${seconds}秒`
+
+    nextTick(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100)) // 翻牌子有动画
+      if (confirm(`很遗憾，你被炸死了！\n游戏时长：${timeStr}\n\n要再来一局吗？`)) {
+        handleRestart()
+      }
+    })
     return
   }
 
@@ -148,10 +162,20 @@ const handleCellRevealImpl = async (row: number, col: number) => {
     )
   )
   if (isAllRevealed) {
+    gameStatusRef.value?.stopTimer()
+
     gameState.value = GameStateEnum.Won
-    setTimeout(() => {
-      alert('恭喜你，你成功了！')
-    }, 0);
+    const gameTime = gameStatusRef.value?.getTime() || 0
+    const minutes = Math.floor(gameTime / 60)
+    const seconds = gameTime % 60
+    const timeStr = `${minutes}分${seconds}秒`
+
+    nextTick(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      if (confirm(`恭喜你，你赢了！\n游戏时长：${timeStr}\n\n要再来一局吗？`)) {
+        handleRestart()
+      }
+    })
     return
   }
 }
