@@ -92,43 +92,74 @@ const autoReveal = async (row: number, col: number, revealed = new Set<string>()
   }
 }
 
+// 获取已翻开的格子数量
+const getRevealedCount = (): number => {
+
+	let count = 0
+	for (const cell of cellRefs.value.values()) {
+		setTimeout(() => {
+			console.log(cell)
+		}, 100)
+		if (cell.isRevealed) count++
+	}
+	console.log('getRevealedCount', count)
+	return count
+}
+
+// 修改 handleReveal
 const handleReveal = async (row: number, col: number) => {
-  emit('cellReveal', row, col)
-  
-  // 如果点击的是空格子，触发自动翻开
-  if (props.mineField[row][col] === 0) {
-    await autoReveal(row, col)
-  }
+	emit('cellReveal', row, col)
+
+	// 如果是空格子，触发自动翻开
+	if (props.mineField[row][col] === 0) {
+		await autoReveal(row, col)
+	}
 }
 
 const handleFlag = (row: number, col: number) => {
-  emit('cellFlag', row, col)
+	emit('cellFlag', row, col)
 }
 
 const handleUnflag = (row: number, col: number) => {
-  emit('cellUnflag', row, col)
+	emit('cellUnflag', row, col)
+}
+
+// 重置所有格子
+const resetBoard = () => {
+	console.log('resetBoard')
+	// 遍历所有格子引用并重置
+	for (const cell of cellRefs.value.values()) {
+		cell.reset()
+	}
+	// 清空格子引用集合
+	cellRefs.value.clear()
 }
 
 const boardStyle = computed(() => ({
 	gridTemplateColumns: `repeat(${props.cols}, 1fr)`,
 }))
+
+// 暴露方法给父组件
+defineExpose({
+	resetBoard,
+	getRevealedCount
+})
 </script>
 
 <style scoped>
 .game-board-outside {
 	width: 100%;
 	background: #f5f5f5;
+	overflow: auto;
 }
+
 .game-board {
-	/* display: grid; */
-		gap: 4px;
+	gap: 4px;
 		background: #f5f5f5;
 		border-radius: 8px;
-		/* box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
-			margin: 0 auto;
+		margin: 0 auto;
 			padding: 8px;
 			width: fit-content;
-		overflow: auto;
 }
 
 .board-row {

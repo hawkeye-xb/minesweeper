@@ -1,22 +1,61 @@
 <template>
-  <div class="game-status">
-    <div class="mines-counter">💣 {{ minesLeft }}</div>
-    <button class="restart-btn" @click="$emit('restart')">🔄</button>
-    <div class="timer">⏱️ {{ formatTime(time) }}</div>
-  </div>
+	<div class="game-status">
+		<div class="mines-counter">💣 {{ minesLeft }}</div>
+		<button class="restart-btn" @click="$emit('restart')">重新开始</button>
+		<div class="timer">⏱️ {{ formatTime(time) }}</div>
+	</div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 
-const minesLeft = ref(10)
+const props = defineProps<{
+	minesLeft: number
+}>()
+
 const time = ref(0)
+let timerInterval: number | null = null
+
+// 计时器控制函数
+const startTimer = () => {
+	console.log('startTimer')
+	if (!timerInterval) {
+		timerInterval = setInterval(() => {
+			time.value++
+		}, 1000)
+	}
+}
+
+const stopTimer = () => {
+	if (timerInterval) {
+		clearInterval(timerInterval)
+		timerInterval = null
+	}
+}
+
+const resetTimer = () => {
+	stopTimer()
+	time.value = 0
+}
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+	stopTimer()
+})
 
 const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+	const mins = Math.floor(seconds / 60)
+	const secs = seconds % 60
+	return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
+
+// 暴露方法给父组件
+defineExpose({
+	startTimer,
+	stopTimer,
+	resetTimer,
+	time
+})
 </script>
 
 <style scoped>
@@ -44,11 +83,11 @@ const formatTime = (seconds: number): string => {
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
-  transition: transform 0.3s ease;
+	/* transition: transform 0.3s ease; */
 }
 
 .restart-btn:hover {
-  transform: rotate(180deg);
+	/* transform: rotate(180deg); */
 }
 
 @media (max-width: 768px) {

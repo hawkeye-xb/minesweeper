@@ -1,9 +1,9 @@
 <template>
   <div class="minesweeper">
     <DifficultySelector v-model:currentLevel="gameConfig.level" @level-select="handleLevelSelect" />
-    <GameStatus @restart="handleRestart" :mines-left="minesLeft" />
-    <GameBoard :rows="gameConfig.rows" :cols="gameConfig.cols" :mine-field="mineField" @cell-reveal="handleCellReveal"
-      @cell-flag="handleCellFlag" @cell-unflag="handleCellUnflag" />
+    <GameStatus ref="gameStatusRef" @restart="handleRestart" :mines-left="minesLeft" />
+    <GameBoard ref="gameBoardRef" :rows="gameConfig.rows" :cols="gameConfig.cols" :mine-field="mineField"
+      @cell-reveal="handleCellReveal" @cell-flag="handleCellFlag" @cell-unflag="handleCellUnflag" />
   </div>
 </template>
 
@@ -32,6 +32,8 @@ const gameConfig = ref<GameConfig>({
 // 游戏状态
 const mineField = ref<number[][]>([])
 const minesLeft = ref(10)
+const isGameStarted = ref(false)
+const isGameOver = ref(false)
 
 // 从本地存储加载配置
 const loadConfig = () => {
@@ -69,16 +71,83 @@ const handleLevelSelect = (level: { name: string, rows: number, cols: number, mi
   initGame()
 }
 
+const gameStatusRef = ref<InstanceType<typeof GameStatus> | null>(null)
+const gameBoardRef = ref<InstanceType<typeof GameBoard> | null>(null)
+
 // 处理重新开始
+// 修改 handleRestart
 const handleRestart = () => {
   initGame()
+  gameBoardRef.value?.resetBoard()
+  gameStatusRef.value?.resetTimer()
+  isGameStarted.value = false
+  isGameOver.value = false
 }
 
-// 处理格子点击
-const handleCellReveal = (row: number, col: number) => {
-  // 这里后续添加游戏逻辑
-  console.log('揭开格子', row, col)
+// 添加节流函数工具
+const throttle = <T extends (...args: any[]) => any>(fn: T, delay: number) => {
+  let lastTime = 0
+  return (...args: Parameters<T>): ReturnType<T> | undefined => {
+    const now = Date.now()
+    if (now - lastTime >= delay) {
+      lastTime = now
+      return fn(...args)
+    }
+  }
 }
+
+// 修改 handleCellReveal
+const handleCellRevealImpl = async (row: number, col: number) => {
+  if (isGameOver.value) return
+
+  if (!isGameStarted.value) {
+    // 第一次点击
+    isGameStarted.value = true
+    gameStatusRef.value?.startTimer()
+
+    if (mineField.value[row][col] !== 0) {
+      const excludePositions: [number, number][] = [[row, col]]
+      for (let i = -1; i <= 1; i++) {
+        for (let j = -1; j <= 1; j++) {
+          const newRow = row + i
+          const newCol = col + j
+          if (newRow >= 0 && newRow < gameConfig.value.rows &&
+            newCol >= 0 && newCol < gameConfig.value.cols) {
+            excludePositions.push([newRow, newCol])
+          }
+        }
+      }
+
+      const field = MineGenerator.generate({
+        rows: gameConfig.value.rows,
+        cols: gameConfig.value.cols,
+        mineCount: gameConfig.value.mines,
+        excludePositions,
+      })
+      mineField.value = field
+      console.log('重新生成雷区', mineField.value)
+    }
+  } else if (mineField.value[row][col] === -1) {
+    // 点到地雷，游戏结束
+    isGameOver.value = true
+    alert('游戏结束！你踩到地雷了！')
+    return
+  }
+
+  // 检查是否获胜
+  console.log('检查是否获胜')
+  const totalCells = gameConfig.value.rows * gameConfig.value.cols
+  const revealedCount = gameBoardRef.value?.getRevealedCount() || 0
+  const nonMineCount = totalCells - gameConfig.value.mines
+
+  if (revealedCount === nonMineCount) {
+    isGameOver.value = true
+    alert('恭喜你！扫雷成功！')
+  }
+}
+
+// 使用节流包装原始函数，设置 100ms 的节流时间
+const handleCellReveal = throttle(handleCellRevealImpl, 168)
 
 // 处理标记
 const handleCellFlag = (row: number, col: number) => {
