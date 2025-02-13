@@ -74,12 +74,14 @@ defineExpose({
 }
 
 .mines-counter, .timer {
+	width: 80px;
   font-size: 18px;
   font-weight: 500;
   color: #333;
 }
 
 .restart-btn {
+	width: 160px;
   background: none;
   border: none;
   font-size: 24px;
