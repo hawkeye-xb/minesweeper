@@ -1,19 +1,13 @@
 <template>
-  <div class="game-board" :style="boardStyle">
-    <div v-for="(row, rowIndex) in mineField" :key="rowIndex" class="board-row">
-      <MineCell
-        v-for="(cell, colIndex) in row"
-        :key="`${rowIndex}-${colIndex}`"
-        :value="cell"
-        :row="rowIndex"
-        :col="colIndex"
-        :ref="el => setCellRef(rowIndex, colIndex, el)"
-        @reveal="handleReveal"
-        @flag="handleFlag"
-        @unflag="handleUnflag"
-      />
-    </div>
-  </div>
+	<div class="game-board-outside">
+		<div class="game-board">
+			<div v-for="(row, rowIndex) in mineField" :key="rowIndex" class="board-row" :style="boardStyle">
+				<MineCell v-for="(cell, colIndex) in row" :key="`${rowIndex}-${colIndex}`" :value="cell" :row="rowIndex"
+					:col="colIndex" :ref="el => setCellRef(rowIndex, colIndex, el)" @reveal="handleReveal" @flag="handleFlag"
+					@unflag="handleUnflag" />
+			</div>
+		</div>
+	</div>
 </template>
 
 <script setup lang="ts">
@@ -25,6 +19,8 @@ const props = defineProps<{
   cols: number
   mineField: number[][]
 }>()
+
+console.log(props)
 
 const emit = defineEmits<{
   (e: 'cellReveal', row: number, col: number): void
@@ -114,22 +110,30 @@ const handleUnflag = (row: number, col: number) => {
 }
 
 const boardStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${props.cols}, 1fr)`,
+	gridTemplateColumns: `repeat(${props.cols}, 1fr)`,
 }))
 </script>
 
 <style scoped>
+.game-board-outside {
+	width: 100%;
+	background: #f5f5f5;
+}
 .game-board {
-  display: grid;
-  gap: 4px;
-  background: #f5f5f5;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin: 0 auto;
-  padding: 8px;
-  width: fit-content;
+	/* display: grid; */
+		gap: 4px;
+		background: #f5f5f5;
+		border-radius: 8px;
+		/* box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
+			margin: 0 auto;
+			padding: 8px;
+			width: fit-content;
+		overflow: auto;
 }
 
+.board-row {
+	display: grid;
+}
 @media (max-width: 768px) {
   .game-board {
     width: 100%;

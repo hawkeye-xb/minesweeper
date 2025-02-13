@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, toRef } from 'vue'
+import { ref, watch } from 'vue'
 
 interface Level {
   name: string
@@ -73,50 +73,68 @@ const props = defineProps<{
   currentLevel: string
 }>()
 
-// 现在可以正确使用 toRef
-const currentLevel = toRef(props, 'currentLevel')
+// 移除 toRef，直接使用 props
 const showCustomDialog = ref(false)
+
+// 监听弹窗状态变化
+watch(showCustomDialog, (newValue) => {
+  if (newValue) {
+    // 显示弹窗时禁止滚动
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.width = '100%'
+  } else {
+    // 关闭弹窗时恢复滚动
+    document.body.style.overflow = ''
+    document.body.style.position = ''
+    document.body.style.width = ''
+  }
+})
+
 const customConfig = ref({
-  rows: 12,
-  cols: 12,
-  mines: 20
+	rows: 12,
+	cols: 12,
+	mines: 20
 })
 
 const emit = defineEmits<{
-  (e: 'levelSelect', level: Level): void
+	(e: 'levelSelect', level: Level): void
+	(e: 'update:currentLevel', value: string): void
 }>()
 
 const handleLevelClick = (level: Level) => {
-  if (level.name === '自定义') {
-    showCustomDialog.value = true
-    return
-  }
-  currentLevel.value = level.name
-  emit('levelSelect', level)
+	if (level.name === '自定义') {
+		showCustomDialog.value = true
+		return
+	}
+	// 通过 emit 更新值
+	emit('update:currentLevel', level.name)
+	emit('levelSelect', level)
 }
 
 const confirmCustom = () => {
-  const { rows, cols, mines } = customConfig.value
-  
-  // 验证输入
-  if (!rows || !cols || !mines) {
-    alert('请填写所有字段')
-    return
-  }
-  
-  if (mines >= rows * cols) {
-    alert('地雷数量不能大于或等于格子总数')
-    return
-  }
+	const { rows, cols, mines } = customConfig.value
 
-  currentLevel.value = '自定义'
-  emit('levelSelect', {
-    name: '自定义',
-    rows,
-    cols,
-    mines
-  })
-  showCustomDialog.value = false
+	// 验证输入
+	if (!rows || !cols || !mines) {
+		alert('请填写所有字段')
+		return
+	}
+
+	if (mines >= rows * cols) {
+		alert('地雷数量不能大于或等于格子总数')
+		return
+	}
+
+	// 通过 emit 更新值
+	emit('update:currentLevel', '自定义')
+	emit('levelSelect', {
+		name: '自定义',
+		rows,
+		cols,
+		mines
+	})
+	showCustomDialog.value = false
 }
 </script>
 
@@ -160,6 +178,8 @@ button.active {
 }
 
 .custom-dialog-overlay {
+  width: 100vw;
+  height: 100vh;
   position: fixed;
   top: 0;
   left: 0;
@@ -170,55 +190,61 @@ button.active {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-overflow-scrolling: none; /* 添加这行 */
 }
 
 .custom-dialog {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  width: 90%;
-  max-width: 400px;
+	background: white;
+	padding: 20px;
+	border-radius: 8px;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+	width: 90%;
+	max-width: 400px;
+  overscroll-behavior: contain; /* 添加这行 */
+  max-height: 90vh; /* 添加这行 */
+  overflow-y: auto; /* 添加这行 */
 }
 
 .custom-dialog h3 {
-  margin: 0 0 20px;
-  color: #333;
+	margin: 0 0 20px;
+	color: #333;
 }
 
 .input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-bottom: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	margin-bottom: 20px;
 }
 
 .input-group label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
 .input-group input {
-  width: 100px;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+	width: 100px;
+	padding: 8px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
 }
 
 .dialog-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
 }
 
 .dialog-buttons button {
-  min-width: 80px;
+	min-width: 80px;
 }
 
 @media (max-width: 768px) {
-  .custom-dialog {
-    width: 95%;
+	.custom-dialog {
+		width: 70%;
     padding: 15px;
   }
 

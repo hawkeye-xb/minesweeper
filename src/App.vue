@@ -1,21 +1,9 @@
 <template>
   <div class="minesweeper">
-    <DifficultySelector 
-      @level-select="handleLevelSelect"
-      :current-level="gameConfig.level"
-    />
-    <GameStatus 
-      @restart="handleRestart"
-      :mines-left="minesLeft"
-    />
-    <GameBoard 
-      :rows="gameConfig.rows"
-      :cols="gameConfig.cols"
-      :mine-field="mineField"
-      @cell-reveal="handleCellReveal"
-      @cell-flag="handleCellFlag"
-      @cell-unflag="handleCellUnflag"
-    />
+    <DifficultySelector v-model:currentLevel="gameConfig.level" @level-select="handleLevelSelect" />
+    <GameStatus @restart="handleRestart" :mines-left="minesLeft" />
+    <GameBoard :rows="gameConfig.rows" :cols="gameConfig.cols" :mine-field="mineField" @cell-reveal="handleCellReveal"
+      @cell-flag="handleCellFlag" @cell-unflag="handleCellUnflag" />
   </div>
 </template>
 
@@ -111,8 +99,7 @@ onMounted(() => {
 
 <style>
 .minesweeper {
-  max-width: 800px;
-  margin: 0 auto;
+  box-sizing: border-box;
   padding: 20px;
 }
 
