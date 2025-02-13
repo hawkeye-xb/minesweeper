@@ -3,7 +3,8 @@
     <DifficultySelector v-model:currentLevel="gameConfig.level" @level-select="handleLevelSelect" />
     <GameStatus ref="gameStatusRef" @restart="handleRestart" :mines-left="minesLeft" />
     <GameBoard ref="gameBoardRef" :rows="gameConfig.rows" :cols="gameConfig.cols" :mine-field="mineField"
-      @cell-reveal="handleCellReveal" @cell-flag="handleCellFlag" @cell-unflag="handleCellUnflag" />
+      :cell-states="cellStates" @cell-reveal="handleCellReveal" @cell-flag="handleCellFlag"
+      @cell-unflag="handleCellUnflag" />
   </div>
 </template>
 
@@ -13,6 +14,7 @@ import DifficultySelector from './components/DifficultySelector.vue'
 import GameStatus from './components/GameStatus.vue'
 import GameBoard from './components/GameBoard.vue'
 import { MineGenerator } from './utils/mineGenerator'
+import { CellStateEnum, GameStateEnum } from '@/utils/types'
 
 interface GameConfig {
   level: string
@@ -29,11 +31,10 @@ const gameConfig = ref<GameConfig>({
   mines: 10
 })
 
-// 游戏状态
+const gameState = ref<GameStateEnum>(GameStateEnum.Ready)
 const mineField = ref<number[][]>([])
+const cellStates = ref<CellStateEnum[][]>([]) // 新增状态数组
 const minesLeft = ref(10)
-const isGameStarted = ref(false)
-const isGameOver = ref(false)
 
 // 从本地存储加载配置
 const loadConfig = () => {
@@ -56,7 +57,15 @@ const initGame = () => {
     mineCount: gameConfig.value.mines
   })
   mineField.value = field
+
+  cellStates.value = Array.from({ length: gameConfig.value.rows }, () =>
+    Array(gameConfig.value.cols).fill(CellStateEnum.Hidden)
+  )
+
   minesLeft.value = gameConfig.value.mines
+  gameState.value = GameStateEnum.Ready
+
+  gameStatusRef.value?.resetTimer()
 }
 
 // 处理难度选择
@@ -74,15 +83,7 @@ const handleLevelSelect = (level: { name: string, rows: number, cols: number, mi
 const gameStatusRef = ref<InstanceType<typeof GameStatus> | null>(null)
 const gameBoardRef = ref<InstanceType<typeof GameBoard> | null>(null)
 
-// 处理重新开始
-// 修改 handleRestart
-const handleRestart = () => {
-  initGame()
-  gameBoardRef.value?.resetBoard()
-  gameStatusRef.value?.resetTimer()
-  isGameStarted.value = false
-  isGameOver.value = false
-}
+const handleRestart = initGame
 
 // 添加节流函数工具
 const throttle = <T extends (...args: any[]) => any>(fn: T, delay: number) => {
@@ -96,13 +97,16 @@ const throttle = <T extends (...args: any[]) => any>(fn: T, delay: number) => {
   }
 }
 
-// 修改 handleCellReveal
 const handleCellRevealImpl = async (row: number, col: number) => {
-  if (isGameOver.value) return
+  console.log('handleCellReveal', row, col)
+  if (gameState.value === GameStateEnum.Lost || gameState.value === GameStateEnum.Won) return
 
-  if (!isGameStarted.value) {
-    // 第一次点击
-    isGameStarted.value = true
+  if (cellStates.value[row][col] !== CellStateEnum.Hidden) return // 已翻开或已标记的格子不处理
+
+  cellStates.value[row][col] = CellStateEnum.Revealed
+
+  if (gameState.value === GameStateEnum.Ready) { // 第一次点击
+    gameState.value = GameStateEnum.Playing
     gameStatusRef.value?.startTimer()
 
     if (mineField.value[row][col] !== 0) {
@@ -125,38 +129,50 @@ const handleCellRevealImpl = async (row: number, col: number) => {
         excludePositions,
       })
       mineField.value = field
-      console.log('重新生成雷区', mineField.value)
+      console.log('重新生成雷区，状态不变', mineField.value)
+      return
     }
-  } else if (mineField.value[row][col] === -1) {
-    // 点到地雷，游戏结束
-    isGameOver.value = true
-    alert('游戏结束！你踩到地雷了！')
+  }
+
+  if (mineField.value[row][col] === -1) { // 点到地雷，游戏结束
+    gameState.value = GameStateEnum.Lost
+    setTimeout(() => {
+      alert('游戏结束！你踩到地雷了！')
+    }, 0);
     return
   }
 
-  // 检查是否获胜
-  console.log('检查是否获胜')
-  const totalCells = gameConfig.value.rows * gameConfig.value.cols
-  const revealedCount = gameBoardRef.value?.getRevealedCount() || 0
-  const nonMineCount = totalCells - gameConfig.value.mines
-
-  if (revealedCount === nonMineCount) {
-    isGameOver.value = true
-    alert('恭喜你！扫雷成功！')
+  const isAllRevealed = cellStates.value.every((row, rowIndex) =>
+    row.every((cellState, colIndex) =>
+      cellState === CellStateEnum.Revealed || mineField.value[rowIndex][colIndex] === -1
+    )
+  )
+  if (isAllRevealed) {
+    gameState.value = GameStateEnum.Won
+    setTimeout(() => {
+      alert('恭喜你，你成功了！')
+    }, 0);
+    return
   }
 }
 
 // 使用节流包装原始函数，设置 100ms 的节流时间
-const handleCellReveal = throttle(handleCellRevealImpl, 168)
+// const handleCellReveal = throttle(handleCellRevealImpl, 168)
+const handleCellReveal = handleCellRevealImpl
 
 // 处理标记
 const handleCellFlag = (row: number, col: number) => {
-  minesLeft.value--
+  if (cellStates.value[row][col] === CellStateEnum.Hidden) {
+    cellStates.value[row][col] = CellStateEnum.Flagged
+    minesLeft.value--
+  }
 }
 
-// 处理取消标记
 const handleCellUnflag = (row: number, col: number) => {
-  minesLeft.value++
+  if (cellStates.value[row][col] === CellStateEnum.Flagged) {
+    cellStates.value[row][col] = CellStateEnum.Hidden
+    minesLeft.value++
+  }
 }
 
 // 组件挂载时初始化

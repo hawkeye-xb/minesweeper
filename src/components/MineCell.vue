@@ -22,12 +22,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { CellStateEnum } from '@/utils/types'
 
 interface Props {
 	value: number
 	row: number
 	col: number
+	state: number
 }
 
 const props = defineProps<Props>()
@@ -37,36 +39,24 @@ const emit = defineEmits<{
 	(e: 'unflag', row: number, col: number): void
 }>()
 
-const isRevealed = ref(false)
-const isFlagged = ref(false)
+const isRevealed = computed(() => props.state === CellStateEnum.Revealed)
+const isFlagged = computed(() => props.state === CellStateEnum.Flagged)
+
 let touchStartTime = 0
 const LONG_PRESS_DURATION = 500 // 长按判定时间（毫秒）
 
 // 处理左键点击
 const handleClick = () => {
-  // 如果已经翻开，不做任何操作
-  if (isRevealed.value) return
-  
-  if (isFlagged.value) {
-    // 如果已标记，则取消标记
-    isFlagged.value = false
-    emit('unflag', props.row, props.col)
-  } else {
-    // 未翻开且未标记时才能翻开
-    isRevealed.value = true
-    emit('reveal', props.row, props.col)
-  }
+	if (props.state === CellStateEnum.Hidden) { // 未翻开状态
+		emit('reveal', props.row, props.col)
+	}
 }
 
 // 处理右键点击
 const handleRightClick = () => {
-  // 如果已经翻开，不做任何操作
-  if (isRevealed.value) return
-  
-  isFlagged.value = !isFlagged.value
-  if (isFlagged.value) {
-    emit('flag', props.row, props.col)
-  } else {
+	if (props.state === CellStateEnum.Hidden) { // 未翻开状态
+		emit('flag', props.row, props.col)
+	} else if (props.state === CellStateEnum.Flagged) { // 已标记状态
     emit('unflag', props.row, props.col)
   }
 }
@@ -86,29 +76,6 @@ const handleTouchEnd = (event: TouchEvent) => {
 		handleRightClick()
 	}
 }
-
-// 暴露方法给父组件
-const isAutoRevealed = ref(false)
-
-// 修改 reveal 方法
-const reveal = () => {
-  if (!isFlagged.value && !isRevealed.value) {
-    isRevealed.value = true
-    isAutoRevealed.value = true
-    // 添加延迟重置自动翻开标志
-    setTimeout(() => {
-      isAutoRevealed.value = false
-    }, 500)
-  }
-}
-
-defineExpose({
-	reveal,
-	reset: () => {
-		isRevealed.value = false
-		isFlagged.value = false
-	}
-})
 </script>
 
 <style scoped>
