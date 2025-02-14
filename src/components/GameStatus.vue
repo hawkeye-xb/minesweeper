@@ -71,9 +71,9 @@ defineExpose({
   align-items: center;
   padding: 16px;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  margin: 16px 0;
+	border-radius: 8px;
+		margin: 16px 0;
+		border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .mines-counter, .timer {

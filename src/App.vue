@@ -8,7 +8,7 @@
       @cell-unflag="handleCellUnflag" />
 
     <div v-if="showTip" class="tip-message">
-      已达到最大标记数量！
+      {{ msg }}
     </div>
   </div>
 </template>
@@ -36,6 +36,7 @@ const gameConfig = ref<GameConfig>({
   mines: 10
 })
 
+const msg = ref('')
 const gameState = ref<GameStateEnum>(GameStateEnum.Ready)
 const mineField = ref<number[][]>([])
 const cellStates = ref<CellStateEnum[][]>([]) // 新增状态数组
@@ -56,21 +57,25 @@ const saveConfig = () => {
 
 // 初始化游戏
 const initGame = () => {
-  const field = MineGenerator.generate({
-    rows: gameConfig.value.rows,
-    cols: gameConfig.value.cols,
-    mineCount: gameConfig.value.mines
-  })
-  mineField.value = field
+  try {
+    const field = MineGenerator.generate({
+      rows: gameConfig.value.rows,
+      cols: gameConfig.value.cols,
+      mineCount: gameConfig.value.mines
+    })
+    mineField.value = field
 
-  cellStates.value = Array.from({ length: gameConfig.value.rows }, () =>
-    Array(gameConfig.value.cols).fill(CellStateEnum.Hidden)
-  )
+    cellStates.value = Array.from({ length: gameConfig.value.rows }, () =>
+      Array(gameConfig.value.cols).fill(CellStateEnum.Hidden)
+    )
 
-  minesLeft.value = gameConfig.value.mines
-  gameState.value = GameStateEnum.Ready
+    minesLeft.value = gameConfig.value.mines
+    gameState.value = GameStateEnum.Ready
 
-  gameStatusRef.value?.resetTimer()
+    gameStatusRef.value?.resetTimer()
+  } catch (error: any) {
+    showTipMessage(error)
+  }
 }
 
 // 处理难度选择
@@ -202,7 +207,8 @@ const showTip = ref(false)
 const tipTimer = ref<number | null>(null)
 
 // 显示提示
-const showTipMessage = () => {
+const showTipMessage = (str: string) => {
+  msg.value = str
   showTip.value = true
   // 清除之前的定时器
   if (tipTimer.value) {
@@ -217,7 +223,7 @@ const showTipMessage = () => {
 const handleCellFlag = (row: number, col: number) => {
   if (cellStates.value[row][col] === CellStateEnum.Hidden) {
     if (minesLeft.value <= 0) {
-      showTipMessage()
+      showTipMessage('已达到最大标记数量！')
       return
     }
 
@@ -286,7 +292,10 @@ onUnmounted(() => {
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background: #fafafa;
+    Ubuntu,
+      Cantarell,
+      'Open Sans',
+      'Helvetica Neue',
+      sans-serif;
 }
 </style>

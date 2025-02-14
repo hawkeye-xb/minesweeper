@@ -1,58 +1,39 @@
 <template>
-  <div class="difficulty-selector">
-    <button 
-      v-for="level in levels" 
-      :key="level.name" 
-      @click="handleLevelClick(level)"
-      :class="{ active: currentLevel === level.name }"
-    >
-      {{ level.name }}
-    </button>
+	<div class="difficulty-selector">
+		<button v-for="level in levels" :key="level.name" @click="handleLevelClick(level)"
+			:class="{ active: currentLevel === level.name }">
+			{{ level.name }}
+		</button>
 
-    <!-- 自定义难度弹窗 -->
-    <div v-if="showCustomDialog" class="custom-dialog-overlay">
-      <div class="custom-dialog">
-        <h3>自定义难度</h3>
-        <div class="input-group">
-          <label>
-            行数:
-            <input 
-              type="number" 
-              v-model="customConfig.rows" 
-              min="1" 
-              max="50"
-            >
-          </label>
-          <label>
-            列数:
-            <input 
-              type="number" 
-              v-model="customConfig.cols" 
-              min="1" 
-              max="50"
-            >
-          </label>
-          <label>
-            地雷数:
-            <input 
-              type="number" 
-              v-model="customConfig.mines" 
-              min="1"
-              :max="customConfig.rows * customConfig.cols - 1"
-            >
-          </label>
-        </div>
-        <div class="dialog-buttons">
-          <button @click="confirmCustom">确认</button>
-          <button @click="showCustomDialog = false">取消</button>
-        </div>
-      </div>
-    </div>
-  </div>
+		<!-- 自定义难度弹窗 -->
+		<div v-if="showCustomDialog" class="custom-dialog-overlay">
+			<div class="custom-dialog">
+				<h3>自定义难度</h3>
+				<div class="input-group">
+					<label>
+						行数:(1-999)
+						<input type="number" v-model="customConfig.rows" min="1" max="50">
+					</label>
+					<label>
+						列数:(1-999)
+						<input type="number" v-model="customConfig.cols" min="1" max="50">
+					</label>
+					<label>
+						地雷数:(>= 行 * 列 - 9)
+						<input type="number" v-model="customConfig.mines" min="1" :max="customConfig.rows * customConfig.cols - 1">
+					</label>
+				</div>
+				<div class="dialog-buttons">
+					<button @click="confirmCustom">确认</button>
+					<button @click="showCustomDialog = false">取消</button>
+				</div>
+			</div>
+		</div>
+	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 
 interface Level {
   name: string
@@ -91,6 +72,20 @@ watch(showCustomDialog, (newValue) => {
   }
 })
 
+// 从本地存储加载自定义配置
+const loadCustomConfig = () => {
+	const savedConfig = localStorage.getItem('minesweeperCustomConfig')
+	if (savedConfig) {
+		customConfig.value = JSON.parse(savedConfig)
+	}
+}
+
+// 保存自定义配置到本地存储
+const saveCustomConfig = () => {
+	localStorage.setItem('minesweeperCustomConfig', JSON.stringify(customConfig.value))
+}
+
+// 初始化自定义配置
 const customConfig = ref({
 	rows: 12,
 	cols: 12,
@@ -121,10 +116,19 @@ const confirmCustom = () => {
 		return
 	}
 
-	if (mines >= rows * cols) {
-		alert('地雷数量不能大于或等于格子总数')
+	// 验证范围
+	if (rows <= 0 || cols <= 0 || rows > 999 || cols > 999) {
+		alert('行数和列数必须在 1-999 之间')
 		return
 	}
+
+	if (mines >= rows * cols - 9) { // 能点击的保底
+		alert('地雷数量不能大于或等于所需格子数')
+		return
+	}
+
+	// 保存配置
+	saveCustomConfig()
 
 	// 通过 emit 更新值
 	emit('update:currentLevel', '自定义')
@@ -136,6 +140,10 @@ const confirmCustom = () => {
 	})
 	showCustomDialog.value = false
 }
+
+onMounted(() => {
+	loadCustomConfig()
+})
 </script>
 
 <style scoped>

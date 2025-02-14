@@ -27,7 +27,6 @@ export class MineGenerator {
     excludePositions = [],
     includedMines = []
   }: GenerateOptions): MineField {
-    // 参数验证
     if (mineCount > rows * cols - excludePositions.length) {
       throw new Error('地雷数量超过可用格子数量');
     }
