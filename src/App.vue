@@ -6,7 +6,7 @@
       <button class="rule-btn" @click="showRules = true">📖 规则</button>
     </div>
     <GameStatus ref="gameStatusRef" @restart="handleRestart" :mines-left="minesLeft"
-      :is-lost="gameState === GameStateEnum.Lost" />
+      :is-lost="gameState === GameStateEnum.Lost" :safe-count="safeToolCount" @use-safe-tool="handleUseSafeTool" />
     <GameBoard ref="gameBoardRef" :rows="gameConfig.rows" :cols="gameConfig.cols" :mine-field="mineField"
       :cell-states="cellStates" @cell-reveal="handleCellReveal" @cell-flag="handleCellFlag"
       @cell-unflag="handleCellUnflag" />
@@ -48,6 +48,35 @@ const mineField = ref<number[][]>([])
 const cellStates = ref<CellStateEnum[][]>([]) // 新增状态数组
 const minesLeft = ref(10)
 const showRules = ref(false)
+// 添加安全格道具数量
+const safeToolCount = ref(1)
+// 使用安全格道具
+const handleUseSafeTool = () => {
+  if (safeToolCount.value <= 0) return
+
+  // 查找未翻开的空格子
+  const safePositions: [number, number][] = []
+  mineField.value.forEach((row, rowIndex) => {
+    row.forEach((cell, colIndex) => {
+      if (cell === 0 && cellStates.value[rowIndex][colIndex] === CellStateEnum.Hidden) {
+        safePositions.push([rowIndex, colIndex])
+      }
+    })
+  })
+
+  if (safePositions.length === 0) {
+    showTipMessage('已经不存在安全格了！')
+    return
+  }
+
+  // 随机选择一个安全格
+  const randomIndex = Math.floor(Math.random() * safePositions.length)
+  const [row, col] = safePositions[randomIndex]
+
+  // 使用道具
+  safeToolCount.value--
+  gameBoardRef.value?.handleReveal(row, col)
+}
 
 // 从本地存储加载配置
 const loadConfig = () => {
@@ -65,6 +94,7 @@ const saveConfig = () => {
 // 初始化游戏
 const initGame = () => {
   try {
+    safeToolCount.value = 1
     const field = MineGenerator.generate({
       rows: gameConfig.value.rows,
       cols: gameConfig.value.cols,
