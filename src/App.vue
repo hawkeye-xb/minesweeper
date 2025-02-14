@@ -1,6 +1,10 @@
 <template>
   <div class="minesweeper">
-    <DifficultySelector v-model:currentLevel="gameConfig.level" @level-select="handleLevelSelect" />
+
+    <div class="game-header">
+      <DifficultySelector v-model:currentLevel="gameConfig.level" @level-select="handleLevelSelect" />
+      <button class="rule-btn" @click="showRules = true">📖 规则</button>
+    </div>
     <GameStatus ref="gameStatusRef" @restart="handleRestart" :mines-left="minesLeft"
       :is-lost="gameState === GameStateEnum.Lost" />
     <GameBoard ref="gameBoardRef" :rows="gameConfig.rows" :cols="gameConfig.cols" :mine-field="mineField"
@@ -10,6 +14,7 @@
     <div v-if="showTip" class="tip-message">
       {{ msg }}
     </div>
+    <RuleDialog :visible="showRules" @close="showRules = false" />
   </div>
 </template>
 
@@ -18,6 +23,7 @@ import { ref, onMounted, nextTick, onUnmounted } from 'vue'
 import DifficultySelector from './components/DifficultySelector.vue'
 import GameStatus from './components/GameStatus.vue'
 import GameBoard from './components/GameBoard.vue'
+import RuleDialog from './components/RuleDialog.vue'
 import { MineGenerator } from './utils/mineGenerator'
 import { CellStateEnum, GameStateEnum } from '@/utils/types'
 
@@ -41,6 +47,7 @@ const gameState = ref<GameStateEnum>(GameStateEnum.Ready)
 const mineField = ref<number[][]>([])
 const cellStates = ref<CellStateEnum[][]>([]) // 新增状态数组
 const minesLeft = ref(10)
+const showRules = ref(false)
 
 // 从本地存储加载配置
 const loadConfig = () => {
@@ -297,5 +304,37 @@ body {
       'Open Sans',
       'Helvetica Neue',
       sans-serif;
+}
+.game-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.rule-btn {
+  padding: 8px 16px;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.rule-btn:hover {
+  background: #e0e0e0;
+}
+
+@media (max-width: 768px) {
+  .game-header {
+    gap: 8px;
+  }
+
+  .rule-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
 }
 </style>
