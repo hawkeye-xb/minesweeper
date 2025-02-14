@@ -109,7 +109,7 @@ defineExpose({
 @media (max-width: 768px) {
   .game-board {
     width: 100%;
-    padding: 4px;
+		padding: 0;
     gap: 2px;
   }
 }

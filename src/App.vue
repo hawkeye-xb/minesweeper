@@ -6,11 +6,15 @@
     <GameBoard ref="gameBoardRef" :rows="gameConfig.rows" :cols="gameConfig.cols" :mine-field="mineField"
       :cell-states="cellStates" @cell-reveal="handleCellReveal" @cell-flag="handleCellFlag"
       @cell-unflag="handleCellUnflag" />
+
+    <div v-if="showTip" class="tip-message">
+      已达到最大标记数量！
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, onUnmounted } from 'vue'
 import DifficultySelector from './components/DifficultySelector.vue'
 import GameStatus from './components/GameStatus.vue'
 import GameBoard from './components/GameBoard.vue'
@@ -194,8 +198,29 @@ const handleCellRevealImpl = async (row: number, col: number) => {
 const handleCellReveal = handleCellRevealImpl
 
 // 处理标记
+const showTip = ref(false)
+const tipTimer = ref<number | null>(null)
+
+// 显示提示
+const showTipMessage = () => {
+  showTip.value = true
+  // 清除之前的定时器
+  if (tipTimer.value) {
+    clearTimeout(tipTimer.value)
+  }
+  // 3秒后自动隐藏
+  tipTimer.value = setTimeout(() => {
+    showTip.value = false
+  }, 3000)
+}
+
 const handleCellFlag = (row: number, col: number) => {
   if (cellStates.value[row][col] === CellStateEnum.Hidden) {
+    if (minesLeft.value <= 0) {
+      showTipMessage()
+      return
+    }
+
     cellStates.value[row][col] = CellStateEnum.Flagged
     minesLeft.value--
   }
@@ -213,6 +238,12 @@ onMounted(() => {
   loadConfig()
   initGame()
 })
+
+onUnmounted(() => {
+  if (tipTimer.value) {
+    clearTimeout(tipTimer.value)
+  }
+})
 </script>
 
 <style>
@@ -221,6 +252,30 @@ onMounted(() => {
   padding: 20px;
 }
 
+.tip-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
 @media (max-width: 768px) {
   .minesweeper {
     padding: 10px;

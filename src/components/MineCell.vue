@@ -5,8 +5,7 @@
 		'mine-1-3': isRevealed && value > 0 && value <= 3,
 		'mine-4-6': isRevealed && value >= 4 && value <= 6,
 		'mine-7-8': isRevealed && value >= 7 && value <= 8,
-	}" @click="handleClick" @contextmenu.prevent="handleRightClick" @touchstart="handleTouchStart"
-		@touchend="handleTouchEnd">
+	}" @click="handleClick" @contextmenu.prevent="handleRightClick">
 		<template v-if="isRevealed">
 			<template v-if="value === -1">
 				💣
@@ -42,9 +41,6 @@ const emit = defineEmits<{
 const isRevealed = computed(() => props.state === CellStateEnum.Revealed)
 const isFlagged = computed(() => props.state === CellStateEnum.Flagged)
 
-let touchStartTime = 0
-const LONG_PRESS_DURATION = 500 // 长按判定时间（毫秒）
-
 // 处理左键点击
 const handleClick = () => {
 	if (props.state === CellStateEnum.Hidden) { // 未翻开状态
@@ -63,21 +59,6 @@ const handleRightClick = () => {
   }
 }
 
-// 处理触摸开始
-const handleTouchStart = () => {
-	touchStartTime = Date.now()
-}
-
-// 处理触摸结束
-const handleTouchEnd = (event: TouchEvent) => {
-	const touchDuration = Date.now() - touchStartTime
-
-	// 防止触发点击事件
-	if (touchDuration >= LONG_PRESS_DURATION) {
-		event.preventDefault()
-		handleRightClick()
-	}
-}
 </script>
 
 <style scoped>
