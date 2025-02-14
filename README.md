@@ -1,3 +1,5 @@
 # minesweeper
+[在线地址](https://hawkeye-minesweeper.deno.dev/)
 
-<iframe src="//player.bilibili.com/player.html?bvid=BV1JoKceLEiD&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"> </iframe>
+https://github.com/user-attachments/assets/0e12fa44-0bfb-43e6-90b7-55d65ed82e7d
+
